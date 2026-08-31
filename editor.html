@@ -2716,6 +2716,7 @@
                     this.channel.on('broadcast', { event: 'move-played' }, ({ payload }) => this.handleIncomingEvent('move-played', payload));
                     this.channel.on('broadcast', { event: 'game-event' }, ({ payload }) => this.handleIncomingEvent('game-event', payload));
                     this.channel.on('broadcast', { event: 'mode-switch' }, ({ payload }) => this.handleIncomingEvent('mode-switch', payload));
+                    this.channel.on('broadcast', { event: 'masterboard-sync' }, ({ payload }) => this.handleIncomingEvent('masterboard-sync', payload));
 
                     this.channel.subscribe(async (status) => {
                         if (status === 'SUBSCRIBED') {
@@ -2746,7 +2747,7 @@
 
                 if (event === 'puzzle-launch') {
                     if (payload.puzzle) {
-                        if (currentMode === 'player' || typeof window.studentMistakesCount !== 'undefined') {
+                        if (typeof startPuzzle === 'function') {
                             startPuzzle(payload.puzzle);
                             showToast(`🚀 ${payload.senderName || 'Coach'} launched: ${payload.puzzle.title}`);
                         }
@@ -2773,6 +2774,10 @@
                     } else if (payload.eventType === 'restart') {
                         restartPlayerPuzzle();
                         showToast(`🔄 Match restarted by ${payload.senderName || 'Host'}`);
+                    }
+                } else if (event === 'masterboard-sync') {
+                    if (typeof onMasterboardSyncReceived === 'function') {
+                        onMasterboardSyncReceived(payload);
                     }
                 } else if (event === 'mode-switch') {
                     if (payload.mode && payload.mode !== currentMode) {
@@ -2832,6 +2837,19 @@
                     senderId: this.clientId,
                     senderName: this.userName
                 });
+            }
+
+            emitMasterboardSync(data) {
+                const payload = {
+                    senderId: this.clientId,
+                    senderName: this.userName,
+                    ...data,
+                    updatedAt: Date.now()
+                };
+                if (typeof onMasterboardSyncReceived === 'function') {
+                    onMasterboardSyncReceived(payload);
+                }
+                this.broadcastMessage('masterboard-sync', payload);
             }
 
             emitStudentProgress(progressData) {

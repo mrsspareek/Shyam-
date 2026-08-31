@@ -1216,7 +1216,7 @@
             <div class="brand-icon">♞</div>
             <div class="brand-text">
                 <h1>Bambinos Chess Platform <span class="brand-badge">PRO v2.0</span></h1>
-                <p>🎓 <b>Student Mode</b>: Join Session & Solve Launched Puzzles</p>
+                <p>🎓 <b>Student Mode</b>: Interactive Classroom & Puzzle Solver</p>
             </div>
         </div>
 
@@ -1254,6 +1254,9 @@
         <section class="board-section">
             <div class="board-wrapper">
                 <div class="board-container" id="chessBoard"></div>
+
+                <svg id="studentWhiteboardSvgOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; border-radius: 8px;"></svg>
+    
             </div>
 
             <!-- BOARD STATUS & BOTTOM CONTROLS -->
@@ -1437,20 +1440,49 @@
         </section>
 
         <!-- MODE 2: PLAYER / SOLVER PANEL -->
-        <section class="workspace-panel" id="playerPanel" style="display: flex; flex: 1; flex-direction: column;">
+        
+        <!-- BLANK WAITING STATE SCREEN (DEFAULT BEFORE TEACHER LAUNCHES ANYTHING) -->
+        <section class="workspace-panel" id="studentBlankWaitingState" style="display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 50px 24px; min-height: 480px;">
+            <div style="font-size: 64px; margin-bottom: 14px;">⏳</div>
+            <h2 style="color: #0f172a; font-size: 22px; margin-bottom: 6px;">Welcome, <span id="waitingStudentNameDisplay" style="color:#2563eb;">Aryan</span>!</h2>
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; color: #1e40af; margin-bottom: 20px;">
+                <span>🆔 <span id="waitingStudentIdDisplay">STU-1001</span></span>
+                <span>•</span>
+                <span>🔑 Session <span id="waitingSessionCodeDisplay">#BAMBINOS-CLASS</span></span>
+            </div>
+            <p style="max-width: 440px; color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px 0;">
+                You are connected to the live classroom! Please wait while your Coach starts the <b>Masterboard Live Whiteboard</b> or launches a <b>Chess Puzzle</b>.
+            </p>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 16px; border-radius: 24px; color: #15803d; font-size: 13px; font-weight: 700;">
+                <span class="status-dot active"></span> 🟢 Live & Waiting for Coach
+            </div>
+        </section>
 
-            <!-- STUDENT WAITING BANNER -->
-            <div id="studentWaitingBanner" style="background: #eff6ff; border: 1px dashed #bfdbfe; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 14px;">
-                <div style="font-size: 32px; margin-bottom: 6px;">⏳</div>
-                <h4 style="margin: 0; color: #1e3a8a; font-size: 16px;">Welcome, <span id="bannerStudentName">Student</span>!</h4>
-                <div style="font-size: 12px; color: #475569; margin-top: 4px;">
-                    Student ID: <b style="color: #0284c7; font-family: monospace;" id="bannerStudentId">STU-1001</b> | Session: <b id="bannerSessionCode">#BAMBINOS-CLASS</b>
+        <!-- STUDENT MASTERBOARD LIVE STREAM VIEW -->
+        <section class="workspace-panel" id="studentMasterboardView" style="display: none; flex: 1; flex-direction: column;">
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <h3 style="margin: 0; font-size: 16px; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                        <span>🎨</span> Coach Masterboard Stream
+                    </h3>
+                    <span class="brand-badge" style="background:#ecfdf5; color:#059669; border-color:#a7f3d0;">🟢 Live Coach Stream</span>
                 </div>
-                <div style="margin-top: 10px; font-weight: 700; color: #2563eb; font-size: 13px;">
-                    🎯 Waiting for your teacher to launch the puzzle...
+                <div style="font-size: 13px; color: #475569;">
+                    Coach Sarah is presenting on the Masterboard. Watch piece movements, arrows, and highlighted squares in real-time!
                 </div>
             </div>
+
+            <div class="card" style="flex: 1;">
+                <div class="card-header">
+                    <span class="card-title">💡 Live Board Annotations</span>
+                </div>
+                <div id="studentAnnotationsBox" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; font-size: 13px; color: #334155; line-height: 1.5;">
+                    Watching live coach whiteboard demonstration...
+                </div>
+            </div>
+        </section>
     
+        <section class="workspace-panel" id="playerPanel" style="display: none; flex: 1; flex-direction: column;">
             <!-- PUZZLE HEADER BANNER (NO EDIT BUTTON) -->
             <div class="solver-banner">
                 <div class="solver-info">
@@ -2732,6 +2764,7 @@
                     this.channel.on('broadcast', { event: 'move-played' }, ({ payload }) => this.handleIncomingEvent('move-played', payload));
                     this.channel.on('broadcast', { event: 'game-event' }, ({ payload }) => this.handleIncomingEvent('game-event', payload));
                     this.channel.on('broadcast', { event: 'mode-switch' }, ({ payload }) => this.handleIncomingEvent('mode-switch', payload));
+                    this.channel.on('broadcast', { event: 'masterboard-sync' }, ({ payload }) => this.handleIncomingEvent('masterboard-sync', payload));
 
                     this.channel.subscribe(async (status) => {
                         if (status === 'SUBSCRIBED') {
@@ -2762,7 +2795,7 @@
 
                 if (event === 'puzzle-launch') {
                     if (payload.puzzle) {
-                        if (currentMode === 'player' || typeof window.studentMistakesCount !== 'undefined') {
+                        if (typeof startPuzzle === 'function') {
                             startPuzzle(payload.puzzle);
                             showToast(`🚀 ${payload.senderName || 'Coach'} launched: ${payload.puzzle.title}`);
                         }
@@ -2789,6 +2822,10 @@
                     } else if (payload.eventType === 'restart') {
                         restartPlayerPuzzle();
                         showToast(`🔄 Match restarted by ${payload.senderName || 'Host'}`);
+                    }
+                } else if (event === 'masterboard-sync') {
+                    if (typeof onMasterboardSyncReceived === 'function') {
+                        onMasterboardSyncReceived(payload);
                     }
                 } else if (event === 'mode-switch') {
                     if (payload.mode && payload.mode !== currentMode) {
@@ -2848,6 +2885,19 @@
                     senderId: this.clientId,
                     senderName: this.userName
                 });
+            }
+
+            emitMasterboardSync(data) {
+                const payload = {
+                    senderId: this.clientId,
+                    senderName: this.userName,
+                    ...data,
+                    updatedAt: Date.now()
+                };
+                if (typeof onMasterboardSyncReceived === 'function') {
+                    onMasterboardSyncReceived(payload);
+                }
+                this.broadcastMessage('masterboard-sync', payload);
             }
 
             emitStudentProgress(progressData) {
@@ -4650,16 +4700,16 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             liveSync.init();
             supabaseSync.init();
             showToast("Welcome! Please join your classroom session.");
-            switchMode('player');
             refreshGeneratedStudentId();
         });
     
         /* ==========================================================================
-           STUDENT PORTAL CONTROLLER WITH UNIQUE STUDENT ID & LIVE JOIN FLOW
+           STUDENT PORTAL CONTROLLER WITH BLANK WAITING STATE & MASTERBOARD RECEIVER
            ========================================================================== */
         let myStudentId = 'STU-' + Math.floor(1000 + Math.random() * 9000);
         let myStudentName = 'Aryan';
         let mySessionCode = 'BAMBINOS-CLASS';
+        let isMasterboardLive = false;
 
         function refreshGeneratedStudentId() {
             myStudentId = 'STU-' + Math.floor(1000 + Math.random() * 9000);
@@ -4687,18 +4737,22 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             const hSession = document.getElementById('headerSessionDisplay');
             if (hSession) hSession.innerText = `Session: #${mySessionCode}`;
             
-            const bName = document.getElementById('bannerStudentName');
-            if (bName) bName.innerText = myStudentName;
-            const bId = document.getElementById('bannerStudentId');
-            if (bId) bId.innerText = myStudentId;
-            const bSess = document.getElementById('bannerSessionCode');
-            if (bSess) bSess.innerText = `#${mySessionCode}`;
+            const wName = document.getElementById('waitingStudentNameDisplay');
+            if (wName) wName.innerText = myStudentName;
+            const wId = document.getElementById('waitingStudentIdDisplay');
+            if (wId) wId.innerText = myStudentId;
+            const wSess = document.getElementById('waitingSessionCodeDisplay');
+            if (wSess) wSess.innerText = `#${mySessionCode}`;
 
             const modal = document.getElementById('studentJoinClassModal');
             if (modal) {
                 modal.classList.remove('active');
                 modal.style.display = 'none';
             }
+
+            // Set player mode and show Blank Waiting Screen by default
+            switchMode('player');
+            showStudentViewState('waiting');
 
             // Connect over Supabase Realtime
             liveSync.clientId = myStudentId;
@@ -4722,11 +4776,145 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             showToast(`👋 Joined Session #${mySessionCode} as ${myStudentName} (${myStudentId})!`);
         }
 
-        // Hide waiting banner when a puzzle is launched
+        function showStudentViewState(state) {
+            // 'waiting' | 'masterboard' | 'puzzle'
+            const boardSec = document.querySelector('.board-section');
+            const waitingEl = document.getElementById('studentBlankWaitingState');
+            const masterboardEl = document.getElementById('studentMasterboardView');
+            const playerEl = document.getElementById('playerPanel');
+
+            if (state === 'waiting') {
+                if (boardSec) boardSec.style.display = 'none';
+                if (waitingEl) waitingEl.style.display = 'flex';
+                if (masterboardEl) masterboardEl.style.display = 'none';
+                if (playerEl) playerEl.style.display = 'none';
+            } else if (state === 'masterboard') {
+                if (boardSec) boardSec.style.display = 'flex';
+                if (waitingEl) waitingEl.style.display = 'none';
+                if (masterboardEl) masterboardEl.style.display = 'flex';
+                if (playerEl) playerEl.style.display = 'none';
+            } else if (state === 'puzzle') {
+                if (boardSec) boardSec.style.display = 'flex';
+                if (waitingEl) waitingEl.style.display = 'none';
+                if (masterboardEl) masterboardEl.style.display = 'none';
+                if (playerEl) playerEl.style.display = 'flex';
+            }
+        }
+
+        /* SVG MASTERBOARD DRAWING RECEIVER ON STUDENT */
+        function getSquareCenter(sqStr, svgWidth = 520, svgHeight = 520, isFlipped = false) {
+            const file = sqStr.charCodeAt(0) - 'a'.charCodeAt(0);
+            const rank = parseInt(sqStr[1]) - 1;
+            const c = isFlipped ? 7 - file : file;
+            const r = isFlipped ? rank : 7 - rank;
+            const sqW = svgWidth / 8;
+            const sqH = svgHeight / 8;
+            return { x: (c + 0.5) * sqW, y: (r + 0.5) * sqH, sqW, sqH };
+        }
+
+        function generateSvgArrow(fromSq, toSq, color, svgW, svgH, isFlipped) {
+            const start = getSquareCenter(fromSq, svgW, svgH, isFlipped);
+            const end = getSquareCenter(toSq, svgW, svgH, isFlipped);
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 8) return '';
+
+            const ux = dx / dist;
+            const uy = dy / dist;
+            const startX = start.x + ux * (start.sqW * 0.15);
+            const startY = start.y + uy * (start.sqH * 0.15);
+
+            const headLength = Math.min(26, start.sqW * 0.46);
+            const headWidth = Math.min(22, start.sqW * 0.38);
+            const baseLength = dist - headLength - (start.sqW * 0.12);
+
+            const baseX = startX + ux * baseLength;
+            const baseY = startY + uy * baseLength;
+            const endX = startX + ux * (dist - (start.sqW * 0.12));
+            const endY = startY + uy * (dist - (start.sqW * 0.12));
+
+            const px = -uy;
+            const py = ux;
+            const leftX = baseX + px * (headWidth / 2);
+            const leftY = baseY + py * (headWidth / 2);
+            const rightX = baseX - px * (headWidth / 2);
+            const rightY = baseY - py * (headWidth / 2);
+
+            const shaftWidth = Math.max(7, Math.round(start.sqW * 0.15));
+
+            return `
+                <g opacity="0.88">
+                    <line x1="${startX}" y1="${startY}" x2="${baseX}" y2="${baseY}" stroke="${color}" stroke-width="${shaftWidth}" stroke-linecap="round" />
+                    <polygon points="${endX},${endY} ${leftX},${leftY} ${rightX},${rightY}" fill="${color}" />
+                </g>
+            `;
+        }
+
+        function generateSvgHighlight(sqStr, color, svgW, svgH, isFlipped) {
+            const center = getSquareCenter(sqStr, svgW, svgH, isFlipped);
+            const r = center.sqW * 0.42;
+            return `
+                <g opacity="0.75">
+                    <circle cx="${center.x}" cy="${center.y}" r="${r}" fill="${color}" opacity="0.32" />
+                    <circle cx="${center.x}" cy="${center.y}" r="${r}" stroke="${color}" stroke-width="4" fill="none" />
+                </g>
+            `;
+        }
+
+        function renderStudentWhiteboardDrawings(drawings) {
+            const svg = document.getElementById('studentWhiteboardSvgOverlay');
+            if (!svg) return;
+            const rect = document.getElementById('chessBoard').getBoundingClientRect();
+            const w = rect.width || 520;
+            const h = rect.height || 520;
+            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+            let svgContent = '';
+            if (Array.isArray(drawings)) {
+                drawings.forEach(d => {
+                    if (d.type === 'arrow' && d.from && d.to) {
+                        svgContent += generateSvgArrow(d.from, d.to, d.color || '#10b981', w, h, boardFlipped);
+                    } else if (d.type === 'highlight' && d.square) {
+                        svgContent += generateSvgHighlight(d.square, d.color || '#10b981', w, h, boardFlipped);
+                    }
+                });
+            }
+            svg.innerHTML = svgContent;
+        }
+
+        /* INCOMING MASTERBOARD SYNC HANDLER */
+        function onMasterboardSyncReceived(payload) {
+            if (!payload || !payload.isMasterboard) return;
+            isMasterboardLive = true;
+
+            // Automatically switch from blank waiting state to masterboard stream
+            showStudentViewState('masterboard');
+
+            if (payload.fen && payload.fen !== engine.getFen()) {
+                engine.loadFen(payload.fen);
+                renderBoard();
+            }
+
+            renderStudentWhiteboardDrawings(payload.drawings || []);
+
+            const box = document.getElementById('studentAnnotationsBox');
+            if (box) {
+                const drawCount = (payload.drawings || []).length;
+                box.innerText = `Coach ${payload.senderName || 'Sarah'} is demonstrating on the board. (${drawCount} active whiteboard arrow${drawCount === 1 ? '' : 's'})`;
+            }
+        }
+
+        // When a puzzle is launched, automatically transition from waiting/masterboard to puzzle solver
         const origStartPuzzle = window.startPuzzle;
         window.startPuzzle = function(p) {
-            const banner = document.getElementById('studentWaitingBanner');
-            if (banner) banner.style.display = 'none';
+            isMasterboardLive = false;
+            showStudentViewState('puzzle');
+            
+            // Clear student whiteboard overlay
+            const svg = document.getElementById('studentWhiteboardSvgOverlay');
+            if (svg) svg.innerHTML = '';
+
             if (origStartPuzzle) origStartPuzzle(p);
         };
     

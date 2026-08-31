@@ -1206,9 +1206,73 @@
             }
         }
     
-        /* SIMPLE TEACHER DASHBOARD STYLES */
+        /* TEACHER DASHBOARD & MASTERBOARD WHITEBOARD STYLES */
         #editorPalette { display: none !important; }
         
+        .board-wrapper {
+            position: relative;
+        }
+
+        #teacherWhiteboardSvgOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 15;
+            border-radius: 8px;
+        }
+
+        .whiteboard-toolbar {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            flex-wrap: wrap;
+        }
+
+        .wb-tool-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .wb-btn {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.15s;
+        }
+        .wb-btn:hover { background: #eff6ff; border-color: #3b82f6; color: #2563eb; }
+        .wb-btn.active { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+
+        .wb-color-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            outline: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .wb-color-btn:hover { transform: scale(1.15); }
+        .wb-color-btn.active { outline-color: #0f172a; transform: scale(1.15); }
+
         .teacher-launcher-bar {
             background: #ffffff;
             border: 1px solid var(--border-color);
@@ -1245,13 +1309,13 @@
             vertical-align: middle;
         }
 
-        /* 🔴 RED ALERT (Struggling: Mistakes >= 2) */
+        /* 🔴 RED ALERT */
         .student-table tr.alert-red {
             background: #fff1f2 !important;
             border-left: 4px solid #ef4444 !important;
         }
 
-        /* 🟡 YELLOW BLINK (Inactive / No piece move for 25s+) */
+        /* 🟡 YELLOW BLINK */
         @keyframes yellowBlinkAnim {
             0% { background: #fefce8; box-shadow: inset 0 0 0 1px #fde047; }
             50% { background: #fef08a; box-shadow: inset 0 0 8px 2px rgba(234, 179, 8, 0.4); }
@@ -1309,17 +1373,20 @@
             <div class="brand-icon">♞</div>
             <div class="brand-text">
                 <h1>Bambinos Chess Platform <span class="brand-badge">PRO v2.0</span></h1>
-                <p>👨‍🏫 <b>Teacher Dashboard</b>: Live Student Progress, Alerts & Solution Steps</p>
+                <p>👨‍🏫 <b>Teacher Dashboard</b>: Live Masterboard Whiteboard, Student Tracking & Alerts</p>
             </div>
         </div>
 
         
         <nav class="header-nav">
-            <button class="nav-btn active" id="tabTeacherMode" onclick="setTeacherActiveMode('teacher')">
-                <span>👨‍🏫</span> Teacher Mode (Live Progress)
+            <button class="nav-btn active" id="tabMasterboardMode" onclick="setTeacherActiveMode('masterboard')">
+                <span>🎨</span> Masterboard (Live Whiteboard)
+            </button>
+            <button class="nav-btn" id="tabTeacherMode" onclick="setTeacherActiveMode('teacher')">
+                <span>📊</span> Live Student Tracker
             </button>
             <button class="nav-btn" id="tabStudentMode" onclick="setTeacherActiveMode('student')">
-                <span>🎓</span> Student Mode (Solution Steps)
+                <span>🎓</span> Solution Steps & Guide
             </button>
         </nav>
     
@@ -1347,6 +1414,9 @@
         <section class="board-section">
             <div class="board-wrapper">
                 <div class="board-container" id="chessBoard"></div>
+
+                <svg id="teacherWhiteboardSvgOverlay"></svg>
+    
             </div>
 
             <!-- BOARD STATUS & BOTTOM CONTROLS -->
@@ -1401,29 +1471,102 @@
                     </div>
                 </div>
             </div>
+        
+            <!-- MASTERBOARD WHITEBOARD CONTROLS -->
+            <div class="whiteboard-toolbar" id="teacherWhiteboardToolbar">
+                <div class="wb-tool-group">
+                    <button class="wb-btn active" id="wbToolMove" onclick="setWhiteboardTool('move')">♟️ Move Pieces</button>
+                    <button class="wb-btn" id="wbToolArrow" onclick="setWhiteboardTool('arrow')">🏹 Arrow</button>
+                    <button class="wb-btn" id="wbToolHighlight" onclick="setWhiteboardTool('highlight')">⭕ Highlight</button>
+                    <button class="wb-btn" id="wbToolEraser" onclick="setWhiteboardTool('eraser')">🧼 Eraser</button>
+                </div>
+
+                <div class="wb-tool-group">
+                    <button class="wb-color-btn active" style="background:#10b981;" onclick="setWhiteboardColor('#10b981')" title="Green (Good / Best Move)"></button>
+                    <button class="wb-color-btn" style="background:#ef4444;" onclick="setWhiteboardColor('#ef4444')" title="Red (Threat / Blunder)"></button>
+                    <button class="wb-color-btn" style="background:#f59e0b;" onclick="setWhiteboardColor('#f59e0b')" title="Yellow (Caution / Plan)"></button>
+                    <button class="wb-color-btn" style="background:#3b82f6;" onclick="setWhiteboardColor('#3b82f6')" title="Blue (Maneuver)"></button>
+                </div>
+
+                <div class="wb-tool-group">
+                    <button class="wb-btn" onclick="undoLastWhiteboardDrawing()" title="Undo last arrow or highlight">↩️ Undo</button>
+                    <button class="wb-btn" onclick="clearWhiteboardDrawings()" title="Clear all drawings on board">🧹 Clear Drawings</button>
+                    <button class="wb-btn" onclick="resetMasterboardToStart()" title="Reset chess pieces to standard starting position">♟️ Reset Board</button>
+                </div>
+            </div>
+    
         </section>
 
         
         <!-- RIGHT WORKSPACE: TEACHER DASHBOARD -->
-        <!-- 1. TEACHER MODE (LIVE STUDENT TRACKER & RED ALERTS) -->
-        <section class="workspace-panel" id="teacherLiveTrackerPanel" style="display: flex; flex: 1; flex-direction: column;">
-            <!-- PUZZLE LAUNCHER & SESSION BAR -->
+        
+        <!-- 1. MASTERBOARD TEACHING STUDIO PANEL -->
+        <section class="workspace-panel" id="teacherMasterboardPanel" style="display: flex; flex: 1; flex-direction: column;">
             <div class="teacher-launcher-bar">
                 <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
                     <span style="font-size: 13px; font-weight: 800; color: #0f172a; white-space: nowrap;">🔑 Session:</span>
                     <span id="currentSessionIdBadge" style="background:#eff6ff; color:#2563eb; font-weight:800; padding:4px 8px; border-radius:6px; border:1px solid #bfdbfe; font-family:monospace; font-size:13px;">BAMBINOS-CLASS</span>
-                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="createNewSessionCode()" title="Generate a fresh new Session ID for a new class">🔄 New Code</button>
-                    
-                    <span style="font-size: 13px; font-weight: 800; color: #0f172a; white-space: nowrap; margin-left: 8px;">📚 Puzzle:</span>
-                    <select class="form-select" id="teacherPuzzleSelect" style="flex: 1; max-width: 260px; font-size: 12px; font-weight: 600;" onchange="onTeacherSelectPuzzleChange(this.value)">
-                    </select>
+                    <button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="createNewSessionCode()" title="Generate new session">🔄 New Code</button>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 12px; color: #475569; background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
-                        👥 <span id="joinedStudentCount">0</span> Students Joined
+                        👥 <span id="joinedStudentCount">0</span> Students Watching
                     </span>
+                    <button class="btn-primary" style="padding: 6px 14px; font-size: 12px; background: #2563eb; border-color: #2563eb;" onclick="broadcastMasterboardState(true)">
+                        📡 Broadcast Sync
+                    </button>
+                </div>
+            </div>
+
+            <!-- MASTERBOARD INSTRUCTION CARD -->
+            <div class="card" style="margin-bottom: 12px;">
+                <div class="card-header">
+                    <span class="card-title">🎨 Masterboard Live Teaching Studio</span>
+                    <span class="brand-badge" style="background:#ecfdf5; color:#059669; border-color:#a7f3d0;">🟢 Live Broadcast Active</span>
+                </div>
+                <p style="font-size: 13px; color: #475569; line-height: 1.5; margin: 0 0 10px 0;">
+                    Use the <b>Masterboard</b> to freely move <b>both White and Black pieces</b> and explain opening principles, tactical combinations, and endgame plans. Use the <b>Whiteboard Tools</b> below the board to draw arrows, highlight target squares, undo, and erase in real-time.
+                </p>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadPresetPosition('start')">♟️ Opening Position</button>
+                    <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadPresetPosition('fork')">🍴 Knight Fork Setup</button>
+                    <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadPresetPosition('pin')">📌 Absolute Pin Setup</button>
+                    <button class="btn-secondary" style="font-size: 11px; padding: 4px 10px;" onclick="loadPresetPosition('endgame')">👑 King & Rook Endgame</button>
+                </div>
+            </div>
+
+            <!-- QUICK LAUNCH PUZZLE CARD -->
+            <div class="card" style="flex: 1;">
+                <div class="card-header">
+                    <span class="card-title">🚀 Launch Guided Challenge to Students</span>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label class="form-label">Select Puzzle from Bank:</label>
+                    <select class="form-select" id="teacherPuzzleSelect" style="font-size: 13px; font-weight: 600;" onchange="onTeacherSelectPuzzleChange(this.value)">
+                    </select>
+                </div>
+                <button class="btn-primary" style="width: 100%; justify-content: center; padding: 10px; font-size: 14px; background: #059669; border-color: #059669;" onclick="launchSelectedPuzzleToStudents()">
+                    🚀 Launch Puzzle & Switch to Live Tracker
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. TEACHER MODE (LIVE STUDENT TRACKER & RED ALERTS) -->
+        <section class="workspace-panel" id="teacherLiveTrackerPanel" style="display: none; flex: 1; flex-direction: column;">
+            <div class="teacher-launcher-bar">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                    <span style="font-size: 13px; font-weight: 800; color: #0f172a; white-space: nowrap;">🔑 Session:</span>
+                    <span id="trackerSessionIdBadge" style="background:#eff6ff; color:#2563eb; font-weight:800; padding:4px 8px; border-radius:6px; border:1px solid #bfdbfe; font-family:monospace; font-size:13px;">BAMBINOS-CLASS</span>
+                    
+                    <span style="font-size: 13px; font-weight: 800; color: #0f172a; white-space: nowrap; margin-left: 8px;">📚 Active:</span>
+                    <span id="activePuzzleBadge" class="brand-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Royal Knight Fork (2 Steps)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="setTeacherActiveMode('masterboard')">
+                        🎨 Back to Masterboard
+                    </button>
                     <button class="btn-primary" style="padding: 6px 14px; font-size: 12px; background: #059669; border-color: #059669;" onclick="launchSelectedPuzzleToStudents()">
-                        🚀 Launch Puzzle
+                        🚀 Re-Launch Puzzle
                     </button>
                 </div>
             </div>
@@ -1431,10 +1574,7 @@
             <!-- LIVE STUDENT TABLE CARD -->
             <div class="card" style="padding: 0; overflow: hidden; flex: 1;">
                 <div style="padding: 12px 16px; background: #ffffff; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 14px; font-weight: 800; color: #0f172a;">📊 Live Student Movement & Move Progress</span>
-                        <span id="activePuzzleBadge" class="brand-badge" style="background:#eff6ff; color:#2563eb; border-color:#bfdbfe;">Royal Knight Fork (2 Steps)</span>
-                    </div>
+                    <span style="font-size: 14px; font-weight: 800; color: #0f172a;">📊 Live Student Movement & Move Progress</span>
                     <span style="font-size: 11px; color: #64748b;">🔴 Red Alert = 2+ Mistakes | 🟡 Yellow Blink = Inactive (25s+)</span>
                 </div>
 
@@ -1460,7 +1600,7 @@
             </div>
         </section>
 
-        <!-- 2. STUDENT MODE (SOLUTION STEPS & STARTING POSITION FOR TEACHER) -->
+        <!-- 3. STUDENT MODE (SOLUTION STEPS & GUIDE FOR TEACHER) -->
         <section class="workspace-panel" id="teacherStudentRefPanel" style="display: none; flex: 1; flex-direction: column;">
             <div class="card" style="flex: 1;">
                 <div class="card-header">
@@ -2665,6 +2805,7 @@
                     this.channel.on('broadcast', { event: 'move-played' }, ({ payload }) => this.handleIncomingEvent('move-played', payload));
                     this.channel.on('broadcast', { event: 'game-event' }, ({ payload }) => this.handleIncomingEvent('game-event', payload));
                     this.channel.on('broadcast', { event: 'mode-switch' }, ({ payload }) => this.handleIncomingEvent('mode-switch', payload));
+                    this.channel.on('broadcast', { event: 'masterboard-sync' }, ({ payload }) => this.handleIncomingEvent('masterboard-sync', payload));
 
                     this.channel.subscribe(async (status) => {
                         if (status === 'SUBSCRIBED') {
@@ -2695,7 +2836,7 @@
 
                 if (event === 'puzzle-launch') {
                     if (payload.puzzle) {
-                        if (currentMode === 'player' || typeof window.studentMistakesCount !== 'undefined') {
+                        if (typeof startPuzzle === 'function') {
                             startPuzzle(payload.puzzle);
                             showToast(`🚀 ${payload.senderName || 'Coach'} launched: ${payload.puzzle.title}`);
                         }
@@ -2722,6 +2863,10 @@
                     } else if (payload.eventType === 'restart') {
                         restartPlayerPuzzle();
                         showToast(`🔄 Match restarted by ${payload.senderName || 'Host'}`);
+                    }
+                } else if (event === 'masterboard-sync') {
+                    if (typeof onMasterboardSyncReceived === 'function') {
+                        onMasterboardSyncReceived(payload);
                     }
                 } else if (event === 'mode-switch') {
                     if (payload.mode && payload.mode !== currentMode) {
@@ -2781,6 +2926,19 @@
                     senderId: this.clientId,
                     senderName: this.userName
                 });
+            }
+
+            emitMasterboardSync(data) {
+                const payload = {
+                    senderId: this.clientId,
+                    senderName: this.userName,
+                    ...data,
+                    updatedAt: Date.now()
+                };
+                if (typeof onMasterboardSyncReceived === 'function') {
+                    onMasterboardSyncReceived(payload);
+                }
+                this.broadcastMessage('masterboard-sync', payload);
             }
 
             emitStudentProgress(progressData) {
@@ -4582,25 +4740,34 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             renderBoard();
             liveSync.init();
             supabaseSync.init();
-            showToast("Welcome to Teacher Dashboard!");
+            showToast("Welcome to Masterboard & Teacher Studio!");
             populateTeacherPuzzleDropdown();
-            setTeacherActiveMode('teacher');
+            setTeacherActiveMode('masterboard');
+            initWhiteboardDrawingInteractions();
             liveSync.clientId = 'COACH_' + Math.floor(1000 + Math.random() * 9000);
             liveSync.connect('BAMBINOS-CLASS', 'Coach Sarah', 'coach');
         });
     
         /* ==========================================================================
-           SIMPLE 2-MODE TEACHER DASHBOARD CONTROLLER WITH UNIQUE SESSION & STUDENT IDS
+           TEACHER DASHBOARD & MASTERBOARD WHITEBOARD CONTROLLER
            ========================================================================== */
-        let currentTeacherMode = 'teacher'; // 'teacher' | 'student'
+        let currentTeacherMode = 'masterboard'; // 'masterboard' | 'teacher' | 'student'
         let activeClassPuzzle = null;
         let currentSessionCode = 'BAMBINOS-CLASS';
         let liveStudentRecords = new Map(); // studentId -> record
+        
+        // Masterboard Whiteboard Drawing State
+        let currentWbTool = 'move'; // 'move' | 'arrow' | 'highlight'
+        let currentWbColor = '#10b981'; // 🟢 Green default
+        let wbDrawings = []; // Array of { type: 'arrow'|'highlight', from, to, square, color }
+        let wbDragStart = null;
 
-        // Live ticker every second to compute idle time & update yellow blinking alerts
+        // Periodic 1-second pulse sync to students & idle time checker
         setInterval(() => {
             if (currentTeacherMode === 'teacher') {
                 renderTeacherStudentTable();
+            } else if (currentTeacherMode === 'masterboard') {
+                broadcastMasterboardState(false);
             }
         }, 1000);
 
@@ -4608,6 +4775,7 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             const rand = Math.floor(1000 + Math.random() * 9000);
             currentSessionCode = 'CLASS-' + rand;
             document.getElementById('currentSessionIdBadge').innerText = currentSessionCode;
+            if (document.getElementById('trackerSessionIdBadge')) document.getElementById('trackerSessionIdBadge').innerText = currentSessionCode;
             const promptEl = document.getElementById('tableSessionPrompt');
             if (promptEl) promptEl.innerText = currentSessionCode;
             
@@ -4615,20 +4783,319 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             liveSync.connect(currentSessionCode, 'Coach Sarah', 'coach');
             showToast(`🔑 Created New Session #${currentSessionCode}`);
             renderTeacherStudentTable();
+            broadcastMasterboardState(true);
         }
 
         function setTeacherActiveMode(mode) {
             currentTeacherMode = mode;
+            document.getElementById('tabMasterboardMode').classList.toggle('active', mode === 'masterboard');
             document.getElementById('tabTeacherMode').classList.toggle('active', mode === 'teacher');
             document.getElementById('tabStudentMode').classList.toggle('active', mode === 'student');
 
+            document.getElementById('teacherMasterboardPanel').style.display = (mode === 'masterboard') ? 'flex' : 'none';
             document.getElementById('teacherLiveTrackerPanel').style.display = (mode === 'teacher') ? 'flex' : 'none';
             document.getElementById('teacherStudentRefPanel').style.display = (mode === 'student') ? 'flex' : 'none';
 
-            if (mode === 'student') {
+            if (mode === 'masterboard') {
+                broadcastMasterboardState(true);
+            } else if (mode === 'student') {
                 renderStudentReferenceView();
             }
         }
+
+        /* MASTERBOARD WHITEBOARD TOOLS & DRAWING ENGINE */
+        function setWhiteboardTool(tool) {
+            currentWbTool = tool;
+            document.getElementById('wbToolMove').classList.toggle('active', tool === 'move');
+            document.getElementById('wbToolArrow').classList.toggle('active', tool === 'arrow');
+            document.getElementById('wbToolHighlight').classList.toggle('active', tool === 'highlight');
+            document.getElementById('wbToolEraser').classList.toggle('active', tool === 'eraser');
+            
+            const overlay = document.getElementById('teacherWhiteboardSvgOverlay');
+            if (overlay) {
+                overlay.style.pointerEvents = (tool === 'eraser') ? 'auto' : 'none';
+            }
+            renderWhiteboardOverlay();
+            
+            if (tool === 'move') showToast('♟️ Move Pieces Mode (Both White & Black)');
+            else if (tool === 'arrow') showToast('🏹 Drag on board to draw Arrows');
+            else if (tool === 'highlight') showToast('⭕ Click/drag on squares to Highlight');
+            else if (tool === 'eraser') showToast('🧼 Eraser Active: Tap any arrow or highlight to delete it');
+        }
+
+        function setWhiteboardColor(color) {
+            currentWbColor = color;
+            document.querySelectorAll('.wb-color-btn').forEach(b => {
+                b.classList.toggle('active', b.style.background.includes(color) || b.style.backgroundColor === color);
+            });
+        }
+
+        function undoLastWhiteboardDrawing() {
+            if (wbDrawings.length > 0) {
+                wbDrawings.pop();
+                renderWhiteboardOverlay();
+                broadcastMasterboardState(true);
+                showToast("↩️ Drawing Undone");
+            }
+        }
+
+        function clearWhiteboardDrawings() {
+            wbDrawings = [];
+            renderWhiteboardOverlay();
+            broadcastMasterboardState(true);
+            showToast("🧹 All Drawings Cleared");
+        }
+
+        function eraseDrawingAtIndex(index, e) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (index >= 0 && index < wbDrawings.length) {
+                const removed = wbDrawings.splice(index, 1)[0];
+                renderWhiteboardOverlay();
+                broadcastMasterboardState(true);
+                playSound('move');
+                showToast(`🧼 Deleted ${removed.type === 'arrow' ? 'Arrow' : 'Highlight'}!`);
+            }
+        }
+
+        function resetMasterboardToStart() {
+            engine.loadFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            wbDrawings = [];
+            renderBoard();
+            renderWhiteboardOverlay();
+            broadcastMasterboardState(true);
+            showToast("♟️ Masterboard Reset to Starting Position");
+        }
+
+        function loadPresetPosition(preset) {
+            wbDrawings = [];
+            if (preset === 'start') {
+                engine.loadFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            } else if (preset === 'fork') {
+                engine.loadFen("r1bqk2r/pp1p1ppp/2n1pn2/8/1bPN4/2N1P3/PP3PPP/R1BQKB1R w KQkq - 0 1");
+                wbDrawings.push({ type: 'arrow', from: 'd4', to: 'c6', color: '#10b981' });
+                wbDrawings.push({ type: 'highlight', square: 'c6', color: '#f59e0b' });
+            } else if (preset === 'pin') {
+                engine.loadFen("4k3/8/8/3q4/8/8/4R3/4K3 w - - 0 1");
+                wbDrawings.push({ type: 'arrow', from: 'e2', to: 'e5', color: '#ef4444' });
+                wbDrawings.push({ type: 'highlight', square: 'd5', color: '#ef4444' });
+            } else if (preset === 'endgame') {
+                engine.loadFen("4k3/8/8/8/8/8/R7/4K3 w - - 0 1");
+                wbDrawings.push({ type: 'arrow', from: 'a2', to: 'a7', color: '#3b82f6' });
+            }
+            renderBoard();
+            renderWhiteboardOverlay();
+            broadcastMasterboardState(true);
+            showToast(`Preset Loaded: ${preset}`);
+        }
+
+        /* SVG DRAWING GENERATOR MATH */
+        function getSquareCenter(sqStr, svgWidth = 520, svgHeight = 520, isFlipped = false) {
+            const file = sqStr.charCodeAt(0) - 'a'.charCodeAt(0);
+            const rank = parseInt(sqStr[1]) - 1;
+            const c = isFlipped ? 7 - file : file;
+            const r = isFlipped ? rank : 7 - rank;
+            const sqW = svgWidth / 8;
+            const sqH = svgHeight / 8;
+            return { x: (c + 0.5) * sqW, y: (r + 0.5) * sqH, sqW, sqH };
+        }
+
+        function generateSvgArrow(fromSq, toSq, color, svgW, svgH, isFlipped, index = null) {
+            const start = getSquareCenter(fromSq, svgW, svgH, isFlipped);
+            const end = getSquareCenter(toSq, svgW, svgH, isFlipped);
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 8) return '';
+
+            const ux = dx / dist;
+            const uy = dy / dist;
+            const startX = start.x + ux * (start.sqW * 0.15);
+            const startY = start.y + uy * (start.sqH * 0.15);
+
+            const headLength = Math.min(26, start.sqW * 0.46);
+            const headWidth = Math.min(22, start.sqW * 0.38);
+            const baseLength = dist - headLength - (start.sqW * 0.12);
+
+            const baseX = startX + ux * baseLength;
+            const baseY = startY + uy * baseLength;
+            const endX = startX + ux * (dist - (start.sqW * 0.12));
+            const endY = startY + uy * (dist - (start.sqW * 0.12));
+
+            const px = -uy;
+            const py = ux;
+            const leftX = baseX + px * (headWidth / 2);
+            const leftY = baseY + py * (headWidth / 2);
+            const rightX = baseX - px * (headWidth / 2);
+            const rightY = baseY - py * (headWidth / 2);
+
+            const shaftWidth = Math.max(7, Math.round(start.sqW * 0.15));
+            const isEraser = (currentWbTool === 'eraser');
+            const cursor = isEraser ? 'cursor: pointer; pointer-events: auto;' : 'pointer-events: none;';
+            const clickAttr = (index !== null) ? `onclick="eraseDrawingAtIndex(${index}, event)"` : '';
+
+            return `
+                <g class="wb-arrow" opacity="0.88" style="${cursor}" ${clickAttr} title="${isEraser ? 'Click to Delete Arrow' : ''}">
+                    <!-- Invisible wider hit target for easy tapping on mobile/desktop -->
+                    <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="transparent" stroke-width="${shaftWidth * 3}" stroke-linecap="round" />
+                    <line x1="${startX}" y1="${startY}" x2="${baseX}" y2="${baseY}" stroke="${color}" stroke-width="${shaftWidth}" stroke-linecap="round" />
+                    <polygon points="${endX},${endY} ${leftX},${leftY} ${rightX},${rightY}" fill="${color}" />
+                </g>
+            `;
+        }
+
+        function generateSvgHighlight(sqStr, color, svgW, svgH, isFlipped, index = null) {
+            const center = getSquareCenter(sqStr, svgW, svgH, isFlipped);
+            const r = center.sqW * 0.42;
+            const isEraser = (currentWbTool === 'eraser');
+            const cursor = isEraser ? 'cursor: pointer; pointer-events: auto;' : 'pointer-events: none;';
+            const clickAttr = (index !== null) ? `onclick="eraseDrawingAtIndex(${index}, event)"` : '';
+
+            return `
+                <g class="wb-highlight" opacity="0.75" style="${cursor}" ${clickAttr} title="${isEraser ? 'Click to Delete Highlight' : ''}">
+                    <circle cx="${center.x}" cy="${center.y}" r="${r}" fill="${color}" opacity="0.32" />
+                    <circle cx="${center.x}" cy="${center.y}" r="${r}" stroke="${color}" stroke-width="4" fill="none" />
+                </g>
+            `;
+        }
+
+        function renderWhiteboardOverlay(previewSq = null) {
+            const svg = document.getElementById('teacherWhiteboardSvgOverlay');
+            if (!svg) return;
+            const boardEl = document.getElementById('chessBoard');
+            if (!boardEl) return;
+            const rect = boardEl.getBoundingClientRect();
+            const w = rect.width || 520;
+            const h = rect.height || 520;
+            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+            let svgContent = '';
+            wbDrawings.forEach((d, idx) => {
+                if (d.type === 'arrow' && d.from && d.to) {
+                    svgContent += generateSvgArrow(d.from, d.to, d.color || '#10b981', w, h, boardFlipped, idx);
+                } else if (d.type === 'highlight' && d.square) {
+                    svgContent += generateSvgHighlight(d.square, d.color || '#10b981', w, h, boardFlipped, idx);
+                }
+            });
+
+            // Live preview arrow while dragging
+            if (wbDragStart && previewSq && wbDragStart !== previewSq && currentWbTool !== 'highlight' && currentWbTool !== 'eraser') {
+                svgContent += generateSvgArrow(wbDragStart, previewSq, currentWbColor || '#10b981', w, h, boardFlipped, null);
+            }
+
+            svg.innerHTML = svgContent;
+        }
+
+        /* ATTACH INTERACTIVE DRAWING LISTENERS */
+        function initWhiteboardDrawingInteractions() {
+            const boardWrapper = document.querySelector('.board-wrapper') || document.getElementById('chessBoard');
+            if (!boardWrapper) return;
+
+            function getSquareFromPointer(e) {
+                const boardEl = document.getElementById('chessBoard');
+                if (!boardEl) return null;
+                const rect = boardEl.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                if (x < 0 || x > rect.width || y < 0 || y > rect.height) return null;
+                const sqW = rect.width / 8;
+                const sqH = rect.height / 8;
+                const cIdx = Math.floor(x / sqW);
+                const rIdx = Math.floor(y / sqH);
+                if (cIdx < 0 || cIdx > 7 || rIdx < 0 || rIdx > 7) return null;
+                const r = boardFlipped ? 7 - rIdx : rIdx;
+                const c = boardFlipped ? 7 - cIdx : cIdx;
+                return RobustChessEngine.coordsToSquare(r, c);
+            }
+
+            boardWrapper.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+
+            boardWrapper.addEventListener('mousedown', (e) => {
+                const isRightClick = (e.button === 2);
+                if (currentWbTool === 'eraser') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const tappedSq = getSquareFromPointer(e);
+                    if (tappedSq) {
+                        const idx = wbDrawings.findLastIndex(d => 
+                            (d.type === 'highlight' && d.square === tappedSq) ||
+                            (d.type === 'arrow' && (d.from === tappedSq || d.to === tappedSq))
+                        );
+                        if (idx !== -1) {
+                            eraseDrawingAtIndex(idx);
+                        }
+                    }
+                    return;
+                }
+
+                if (currentWbTool !== 'move' || isRightClick) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    wbDragStart = getSquareFromPointer(e);
+                }
+            }, true);
+
+            window.addEventListener('mousemove', (e) => {
+                if (wbDragStart && currentWbTool !== 'eraser') {
+                    e.preventDefault();
+                    const currentSq = getSquareFromPointer(e);
+                    renderWhiteboardOverlay(currentSq);
+                }
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                if (wbDragStart && currentWbTool !== 'eraser') {
+                    e.preventDefault();
+                    const dropSq = getSquareFromPointer(e);
+                    if (dropSq) {
+                        if (currentWbTool === 'highlight' || (wbDragStart === dropSq)) {
+                            wbDrawings.push({ type: 'highlight', square: dropSq, color: currentWbColor });
+                        } else {
+                            wbDrawings.push({ type: 'arrow', from: wbDragStart, to: dropSq, color: currentWbColor });
+                        }
+                        renderWhiteboardOverlay();
+                        broadcastMasterboardState(true);
+                    }
+                    wbDragStart = null;
+                }
+            }, true);
+        }
+
+        function broadcastMasterboardState(showToastFeedback = false) {
+            if (currentTeacherMode !== 'masterboard') return;
+            liveSync.emitMasterboardSync({
+                isMasterboard: true,
+                fen: engine.getFen(),
+                drawings: wbDrawings,
+                sideToMove: engine.turn,
+                lastMove: engine.moveHistory[engine.moveHistory.length - 1] || null
+            });
+            if (showToastFeedback) {
+                showToast("📡 Masterboard & Whiteboard Synced to All Students!");
+            }
+        }
+
+        const origRenderBoard = window.renderBoard;
+        window.renderBoard = function() {
+            if (origRenderBoard) origRenderBoard();
+            renderWhiteboardOverlay();
+            if (currentTeacherMode === 'masterboard') {
+                broadcastMasterboardState(false);
+            }
+        };
+
+        const origFlipBoard = window.flipBoard;
+        window.flipBoard = function() {
+            if (origFlipBoard) origFlipBoard();
+            renderWhiteboardOverlay();
+            if (currentTeacherMode === 'masterboard') {
+                broadcastMasterboardState(true);
+            }
+        };
 
         function populateTeacherPuzzleDropdown() {
             const sel = document.getElementById('teacherPuzzleSelect');
@@ -4658,10 +5125,8 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
         function updateActivePuzzleBadge() {
             if (!activeClassPuzzle) return;
             const steps = activeClassPuzzle.solutionMoves ? activeClassPuzzle.solutionMoves.length : 1;
-            document.getElementById('activePuzzleBadge').innerText = `${activeClassPuzzle.title} (${steps} Steps)`;
-            
-            engine.loadFen(activeClassPuzzle.fen);
-            renderBoard();
+            const badge = document.getElementById('activePuzzleBadge');
+            if (badge) badge.innerText = `${activeClassPuzzle.title} (${steps} Steps)`;
         }
 
         function launchSelectedPuzzleToStudents() {
@@ -4687,6 +5152,8 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             showToast(`🚀 Launched "${p.title}" to all students in #${currentSessionCode}!`);
             
             setTeacherActiveMode('teacher');
+            engine.loadFen(p.fen);
+            renderBoard();
             renderTeacherStudentTable();
         }
 
@@ -4716,9 +5183,6 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             } else {
                 hintsEl.innerHTML = '<div>No hints defined.</div>';
             }
-
-            engine.loadFen(p.fen);
-            renderBoard();
         }
 
         /* LIVE STUDENT PROGRESS, RED ALERT & YELLOW BLINK HANDLER */
