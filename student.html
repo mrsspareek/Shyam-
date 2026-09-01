@@ -1953,7 +1953,7 @@
             loadFen(fen) {
                 this.clearBoard();
                 if (!fen) return false;
-                const parts = fen.trim().split(/\\s+/);
+                const parts = fen.trim().split(/\s+/);
                 const ranks = parts[0].split('/');
                 if (ranks.length !== 8) return false;
 
@@ -4277,19 +4277,25 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
 
         function showPlayerFeedback(msg, type, icon = "🎯") {
             const fb = document.getElementById('playerFeedback');
+            if (!fb) return;
             fb.className = `feedback-message ${type}`;
-            document.getElementById('playerFeedbackIcon').innerText = icon;
-            document.getElementById('playerFeedbackText').innerText = msg;
+            const iconEl = document.getElementById('playerFeedbackIcon');
+            if (iconEl) iconEl.innerText = icon;
+            const textEl = document.getElementById('playerFeedbackText');
+            if (textEl) textEl.innerText = msg;
         }
 
         function renderPlayerMovesList() {
             const list = document.getElementById('playerMovesList');
+            if (!list) return;
             const total = (currentPuzzle && currentPuzzle.solutionMoves) ? currentPuzzle.solutionMoves.length : 0;
-            
-            if (isBotMode()) {
-                document.getElementById('playerMoveProgress').innerText = `Full Match (${solverEngine.moveHistory.length} moves)`;
-            } else {
-                document.getElementById('playerMoveProgress').innerText = `Move ${Math.min(solverMoveIndex, total)} / ${total}`;
+            const prog = document.getElementById('playerMoveProgress');
+            if (prog) {
+                if (isBotMode()) {
+                    prog.innerText = `Full Match (${solverEngine.moveHistory.length} moves)`;
+                } else {
+                    prog.innerText = `Move ${Math.min(solverMoveIndex, total)} / ${total}`;
+                }
             }
 
             if (solverEngine.moveHistory.length === 0) {
@@ -4891,8 +4897,9 @@ CREATE POLICY "Allow public all access" ON public.chess_puzzles FOR ALL USING (t
             // Automatically switch from blank waiting state to masterboard stream
             showStudentViewState('masterboard');
 
-            if (payload.fen && payload.fen !== engine.getFen()) {
+            if (payload.fen) {
                 engine.loadFen(payload.fen);
+                solverEngine.loadFen(payload.fen);
                 renderBoard();
             }
 
